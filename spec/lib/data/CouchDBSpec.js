@@ -160,4 +160,39 @@ describe('CouchDB', function () {
 
   });
 
+  describe('update', function () {
+
+    it('can update an existing document', function (done) {
+      db.createDB(function (error, result) {
+        db.create({ _id: 'test', message: 'updating existing document' }, function (error, result) {
+          db.get('test', function (error, result) {
+            expect(result._rev).toMatch(/^1\-/);
+            result.message = "I have updated this message.";
+            db.update(result, function (error, result) {
+              expect(result.ok).toEqual(true);
+              expect(result.id).toEqual('test');
+              expect(result.rev).toMatch(/^2\-/);
+              db.destroyDB(function (error, result) {
+                done(error);
+              });
+            });
+          });
+        });
+      });
+    });
+
+    it('returns an error if a document does not have a revision', function (done) {
+      db.createDB(function (error, result) {
+        db.update({ _id: 'junk', message: "I do not exist and cannot be updated" }, function (error, result) {
+          expect(error.message).toEqual('Cannot update a document without a revision (_rev).');
+          db.destroyDB(function (error, result) {
+            done(error);
+          });
+        });
+      });
+    });
+    
+  });
+
+
 });

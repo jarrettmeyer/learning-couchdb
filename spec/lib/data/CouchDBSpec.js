@@ -11,6 +11,14 @@ describe('CouchDB', function () {
     });
   });
 
+  afterEach(function () {
+    // db.destroyDB(function (error, result) {
+    //   if (error) {
+    //     console.error(error);
+    //   }
+    // });
+  })
+
   it('should have a valid constructor', function () {
     expect(CouchDB).toBeDefined();
     expect(typeof CouchDB).toEqual('function');
@@ -30,9 +38,16 @@ describe('CouchDB', function () {
     it('can add a view to an existing design document', function (done) {
       db.database = 'view_testing';
       db.createDB(function (error, result) {
-        db.create({ _id: '_design/test' }, function (error, result) {
+        if (error) {
+          done(error);
+        }
+        db.addDesignDocument({ _id: 'test' }, function (error, result) {
+          if (error) {
+            done(error);
+          }
+          expect(result.ok).toEqual(true);
           db.addView({
-            id: '_design/test',
+            id: 'test',
             name: 'adults',
             map: function (doc) {
               if (doc.age > 21) {
@@ -51,14 +66,18 @@ describe('CouchDB', function () {
               return sum / count;
             }
           }, function (error, result) {
+            if (error) {
+              done(error);
+            }
             expect(result.ok).toEqual(true);
             db.destroyDB(function (error, result) {
+              expect(result.ok).toEqual(true);
               done(error);
             });
           });
-        })
-      })
-    })
+        });
+      });
+    });
 
   });
 
@@ -81,7 +100,7 @@ describe('CouchDB', function () {
 
     it('can create a new design document', function (done) {
       db.createDB(function (error, result) {
-        db.create({ _id: '_design/demo', description: 'Testing design document creation.'}, function (error, result) {
+        db.create({ _id: '_design/demo', description: 'Testing design document creation.' }, function (error, result) {
           expect(result.ok).toEqual(true);
           expect(result.id).toEqual('_design/demo');
           expect(result.rev).toMatch(/^1\-/);
@@ -210,6 +229,55 @@ describe('CouchDB', function () {
 
   });
 
+  describe('query', function () {
+
+    it('can query a view', function (done) {
+      db.database = 'query_test';
+      db.createDB(function (error, result) {
+        db.create({ _id: '1', message: "hello world" }, function (error, result) {
+          if (error) {
+            done(error);
+          }
+          expect(result.ok).toEqual(true);
+          expect(result.id).toEqual('1');
+          db.addDesignDocument({ _id: 'my_design_doc' }, function (error, result) {
+            if (error) {
+              done(error);
+            }
+            expect(result.ok).toEqual(true);
+            db.addView({
+              id: 'my_design_doc',
+              name: 'my_view',
+              map: function (doc) {
+                emit(doc._id, doc);
+              }
+            }, function (error, result) {
+              if (error) {
+                done(error);
+              }
+              expect(result.ok).toEqual(true);
+              db.query({
+                id: 'my_design_doc',
+                view: 'my_view'
+              }, function (error, result) {
+                if (error) {
+                  done(error);
+                }
+                expect(result.total_rows).toEqual(1);
+                expect(result.offset).toEqual(0);
+                expect(result.rows[0].id).toEqual('1');
+                db.destroyDB(function (error, result) {
+                   done(error);
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+
+  });
+
   describe('update', function () {
 
     it('can update an existing document', function (done) {
@@ -243,6 +311,5 @@ describe('CouchDB', function () {
     });
 
   });
-
 
 });

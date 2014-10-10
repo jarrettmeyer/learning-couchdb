@@ -25,6 +25,43 @@ describe('CouchDB', function () {
     expect(db.database).toEqual('test');
   });
 
+  describe('addView', function () {
+
+    it('can add a view to an existing design document', function (done) {
+      db.database = 'view_testing';
+      db.createDB(function (error, result) {
+        db.create({ _id: '_design/test' }, function (error, result) {
+          db.addView({
+            id: '_design/test',
+            name: 'adults',
+            map: function (doc) {
+              if (doc.age > 21) {
+                emit(doc._id, doc.age);
+              }
+            },
+            reduce: function (keys, values) {
+              var sum = 0, count = 0;
+              values.forEach(function (value) {
+                count += 1;
+                sum += value;
+              });
+              if (count === 0) {
+                return 0;
+              }
+              return sum / count;
+            }
+          }, function (error, result) {
+            expect(result.ok).toEqual(true);
+            db.destroyDB(function (error, result) {
+              done(error);
+            });
+          });
+        })
+      })
+    })
+
+  });
+
   describe('create', function () {
 
     it('can create a new document', function (done) {
@@ -35,6 +72,19 @@ describe('CouchDB', function () {
         db.create({ _id: 'test', message: 'testing document creation'}, function (error, result) {
           expect(result.ok).toEqual(true);
           expect(result.id).toEqual('test');
+          db.destroyDB(function (error, result) {
+            done(error);
+          })
+        });
+      });
+    });
+
+    it('can create a new design document', function (done) {
+      db.createDB(function (error, result) {
+        db.create({ _id: '_design/demo', description: 'Testing design document creation.'}, function (error, result) {
+          expect(result.ok).toEqual(true);
+          expect(result.id).toEqual('_design/demo');
+          expect(result.rev).toMatch(/^1\-/);
           db.destroyDB(function (error, result) {
             done(error);
           })
@@ -191,7 +241,7 @@ describe('CouchDB', function () {
         });
       });
     });
-    
+
   });
 
 

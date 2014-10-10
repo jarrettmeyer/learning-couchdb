@@ -5,6 +5,7 @@ var Account = (function () {
   function Account(args) {
     args = args || {};
     this._id = args._id || uuid.v4();
+    this.type = 'Account';
     this.description = args.description || "";
     this.isActive = args.isActive !== false;
     this.name = args.name || "";

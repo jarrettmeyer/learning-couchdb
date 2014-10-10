@@ -1,5 +1,5 @@
 module.exports = {
-  "couchdb-database": "demo",
-  "couchdb-server": "http://localhost:5984",
+  "couchdbDatabase": "demo",
+  "couchdbServer": "http://localhost:5984",
   "port": 3000
 };
